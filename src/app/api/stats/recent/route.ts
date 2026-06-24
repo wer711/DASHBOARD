@@ -2,15 +2,18 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // آخر النشاطات (جدول موحّد للمشاهدات + الأحداث)
+// يفلتر البيانات بـ timestamps <= الآن (لتجاهل البيانات التجريبية المستقبلية)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const limit = Math.min(Number(searchParams.get('limit') || 30), 100)
   const website = await db.website.findFirst({ where: { domain: 'sada-elaqar.vercel.app' } })
   if (!website) return NextResponse.json({ items: [] })
 
+  const now = new Date()
+
   const [pageViews, events] = await Promise.all([
     db.pageView.findMany({
-      where: { websiteId: website.id },
+      where: { websiteId: website.id, createdAt: { lte: now } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -19,7 +22,7 @@ export async function GET(req: Request) {
       },
     }),
     db.event.findMany({
-      where: { websiteId: website.id },
+      where: { websiteId: website.id, createdAt: { lte: now } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {

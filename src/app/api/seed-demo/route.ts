@@ -72,6 +72,11 @@ export async function POST() {
     const baseCount = 15 + (6 - dayAgo) * 5 + rand(0, 10)
     const sessionCount = baseCount
 
+    // للـ dayAgo = 0 (اليوم)، نحدّد النطاق من بداية اليوم حتى "الآن" فقط
+    // لتفادي إنشاء بيانات بـ timestamps مستقبلية
+    const now = new Date()
+    const dayRangeEnd = dayAgo === 0 ? now : dayEnd
+
     for (let i = 0; i < sessionCount; i++) {
       const country = pick(countries)
       const browser = pick(browsers)
@@ -86,10 +91,12 @@ export async function POST() {
       const visitorId = `demo_v_${rand(10000, 99999)}_${dayAgo}_${i}`
       const sessionId = `demo_s_${rand(100000, 999999)}_${dayAgo}_${i}`
 
-      const startedAt = new Date(dayStart.getTime() + Math.random() * (dayEnd.getTime() - dayStart.getTime()))
+      const startedAt = new Date(dayStart.getTime() + Math.random() * (dayRangeEnd.getTime() - dayStart.getTime()))
       const duration = rand(5, 600)
       const lastActiveAt = new Date(startedAt.getTime() + duration * 1000)
-      const isActive = dayAgo === 0 && Math.random() < 0.15
+      // نشط فقط إذا كانت الجلسة في آخر 5 دقائق
+      const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000)
+      const isActive = dayAgo === 0 && lastActiveAt > fiveMinAgo
       const pageViewCount = rand(1, 5)
       const isBounce = pageViewCount === 1 && Math.random() < 0.5
 

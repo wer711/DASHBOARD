@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Code, Copy, Check, Download, Terminal, TestTube, Loader2, AlertCircle,
+  Code, Copy, Check, Download, Terminal, TestTube, Loader2, AlertCircle, Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -129,6 +129,7 @@ function CodeBlock({ code, language = 'html' }: { code: string; language?: strin
 export function SetupGuide({ scriptUrl }: { scriptUrl: string }) {
   const [tab, setTab] = useState('install')
   const [seeding, setSeeding] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   const handleSeed = async () => {
     setSeeding(true)
@@ -145,6 +146,25 @@ export function SetupGuide({ scriptUrl }: { scriptUrl: string }) {
       toast.error('خطأ في الطلب')
     } finally {
       setSeeding(false)
+    }
+  }
+
+  const handleClearDemo = async () => {
+    if (!confirm('سيتم حذف كل البيانات التجريبية (التي تحمل معرّف demo_). هل أنت متأكد؟')) return
+    setClearing(true)
+    try {
+      const res = await fetch('/api/clear-demo', { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        toast.success(`تم حذف ${data.deleted.sessions} جلسة تجريبية و ${data.deleted.pageViews} مشاهدة`)
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        toast.error('فشل الحذف')
+      }
+    } catch {
+      toast.error('خطأ في الطلب')
+    } finally {
+      setClearing(false)
     }
   }
 
@@ -165,6 +185,16 @@ export function SetupGuide({ scriptUrl }: { scriptUrl: string }) {
             >
               {seeding ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : <TestTube className="ml-1.5 h-3.5 w-3.5" />}
               توليد بيانات تجريبية
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearDemo}
+              disabled={clearing}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              {clearing ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="ml-1.5 h-3.5 w-3.5" />}
+              حذف البيانات التجريبية
             </Button>
             <a href={scriptUrl} download>
               <Button variant="outline" size="sm">
