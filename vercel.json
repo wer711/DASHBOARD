@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "bun install",
+  "buildCommand": "bash scripts/vercel-build.sh",
+  "functions": {
+    "src/app/api/track/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}
