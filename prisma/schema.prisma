@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// الموقع المُتابَع
+model Website {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String   @unique
+  createdAt   DateTime @default(now())
+  sessions    Session[]
+  pageViews   PageView[]
+  events      Event[]
+}
+
+// جلسة الزائر — تجمّع كل نشاط زائر خلال فترة زمنية (30 دقيقة)
+model Session {
+  id            String    @id @default(cuid())
+  websiteId     String
+  visitorId     String    // بصمة فريدة للزائر (localStorage)
+  sessionId     String    @unique // معرف الجلسة في المتصفح
+  ip            String?
+  country       String?
+  countryCode   String?
+  city          String?
+  region        String?
+  latitude      Float?
+  longitude     Float?
+  // جهاز ومتصفح
+  browser       String?
+  browserVersion String?
+  os            String?
+  osVersion     String?
+  device        String?   // desktop / mobile / tablet
+  brand         String?
+  model         String?
+  // شاشة
+  screenWidth   Int?
+  screenHeight  Int?
+  language      String?
+  // المصدر
+  referrer      String?
+  referrerDomain String?
+  // حملات UTM
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmTerm       String?
+  utmContent    String?
+  // حالة الجلسة
+  startedAt     DateTime  @default(now())
+  lastActiveAt  DateTime  @default(now())
+  endedAt       DateTime?
+  duration      Int       @default(0) // بالثواني
+  pageViews     Int       @default(0)
+  isBounce      Boolean   @default(true)
+  isActive      Boolean   @default(true)
+  // علاقات
+  website       Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  pageViewsRel  PageView[]
+  events        Event[]
+
+  @@index([websiteId, startedAt])
+  @@index([visitorId])
+  @@index([isActive])
+}
+
+// مشاهدة صفحة
+model PageView {
+  id          String   @id @default(cuid())
+  websiteId   String
+  sessionId   String
+  visitorId   String
+  url         String
+  path        String
+  title       String?
+  referrer    String?
+  duration    Int      @default(0) // مدة البقاء بالثواني
+  createdAt   DateTime @default(now())
+  // علاقات
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, createdAt])
+  @@index([sessionId])
+  @@index([path])
+}
+
+// حدث مخصص (تسجيل، توليد، ملاحظة، إحالة، نقرة، تحويل...)
+model Event {
+  id          String   @id @default(cuid())
+  websiteId   String
+  sessionId   String
+  visitorId   String
+  name        String   // signup, generate, note, referral, click, conversion...
+  category    String?  // engagement, conversion, content...
+  label       String?  // نص وصفي
+  value       Float?   // قيمة رقمية اختيارية
+  url         String?
+  path        String?
+  metadata    String?  // JSON string لبيانات إضافية
+  createdAt   DateTime @default(now())
+  // علاقات
+  website     Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId, createdAt])
+  @@index([name])
+  @@index([sessionId])
+}
+
+// إحصائيات مجمّعة يومياً (لتسريع الاستعلامات)
+model DailyStats {
+  id          String   @id @default(cuid())
+  websiteId   String
+  date        DateTime // بداية اليوم UTC
+  visitors    Int      @default(0)
+  pageViews   Int      @default(0)
+  sessions    Int      @default(0)
+  bounces     Int      @default(0)
+  signups     Int      @default(0)
+  generations Int      @default(0)
+  notes       Int      @default(0)
+  referrals   Int      @default(0)
+  conversions Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([websiteId, date])
+  @@index([websiteId, date])
+}
