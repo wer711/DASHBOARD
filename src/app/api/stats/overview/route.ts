@@ -17,13 +17,13 @@ export async function GET(req: Request) {
 
   // الجلسات في الفترة
   const sessions = await db.session.findMany({
-    where: { websiteId: website.id, startedAt: { gte: from } },
+    where: { websiteId: website.id, startedAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { visitorId: true, pageViews: true, isBounce: true, duration: true, id: true },
   })
 
   // الفترة السابقة للمقارنة
   const prevSessions = await db.session.findMany({
-    where: { websiteId: website.id, startedAt: { gte: prevFrom, lt: prevTo } },
+    where: { websiteId: website.id, startedAt: { gte: prevFrom, lt: prevTo }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { visitorId: true },
   })
 
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   // الأحداث المخصصة في الفترة
   const events = await db.event.findMany({
-    where: { websiteId: website.id, createdAt: { gte: from } },
+    where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { name: true },
   })
 
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
 
   // الفترة السابقة للأحداث الرئيسية
   const prevEvents = await db.event.findMany({
-    where: { websiteId: website.id, createdAt: { gte: prevFrom, lt: prevTo } },
+    where: { websiteId: website.id, createdAt: { gte: prevFrom, lt: prevTo }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { name: true },
   })
   const prevEventCounts: Record<string, number> = {}

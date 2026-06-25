@@ -18,15 +18,15 @@ export async function GET(req: Request) {
   // كل الجلسات والمشاهدات في الفترة
   const [sessions, pageViews, events] = await Promise.all([
     db.session.findMany({
-      where: { websiteId: website.id, startedAt: { gte: from } },
+      where: { websiteId: website.id, startedAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
       select: { startedAt: true, visitorId: true },
     }),
     db.pageView.findMany({
-      where: { websiteId: website.id, createdAt: { gte: from } },
+      where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
       select: { createdAt: true, sessionId: true },
     }),
     db.event.findMany({
-      where: { websiteId: website.id, createdAt: { gte: from } },
+      where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
       select: { createdAt: true, name: true },
     }),
   ])

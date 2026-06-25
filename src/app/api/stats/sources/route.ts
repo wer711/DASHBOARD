@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
   const from = getFrom(range)
   const sessions = await db.session.findMany({
-    where: { websiteId: website.id, startedAt: { gte: from } },
+    where: { websiteId: website.id, startedAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { referrerDomain: true, visitorId: true },
   })
 

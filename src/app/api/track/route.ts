@@ -7,6 +7,7 @@ import {
   extractDomain,
   extractUTM,
   extractPath,
+  getGeoFromHeaders,
 } from '@/lib/analytics-utils'
 
 // CORS — نسمح للموقع المُتابَع بإرسال البيانات
@@ -54,36 +55,8 @@ async function ensureDefaultWebsite() {
   return website
 }
 
-// استعلام جغرافي عن IP عبر خدمة مجانية
-async function getGeoFromIP(ip: string): Promise<{
-  country: string | null
-  countryCode: string | null
-  city: string | null
-  region: string | null
-  latitude: number | null
-  longitude: number | null
-}> {
-  if (!ip || ip === '0.0.0.0' || ip.startsWith('127.') || ip.startsWith('::1') || ip.startsWith('10.')) {
-    return { country: null, countryCode: null, city: null, region: null, latitude: null, longitude: null }
-  }
-  try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`, {
-      signal: AbortSignal.timeout(3000),
-    })
-    if (!res.ok) throw new Error('geo failed')
-    const data = await res.json()
-    return {
-      country: data.country_name || null,
-      countryCode: data.country_code || null,
-      city: data.city || null,
-      region: data.region || null,
-      latitude: data.latitude ? Number(data.latitude) : null,
-      longitude: data.longitude ? Number(data.longitude) : null,
-    }
-  } catch {
-    return { country: null, countryCode: null, city: null, region: null, latitude: null, longitude: null }
-  }
-}
+// ملاحظة: نستخدم getGeoFromHeaders (Vercel headers) بدلاً من استعلام ipapi.co
+// لأنها أسرع (0ms)، أكثر موثوقية، ومجانية تماماً
 
 export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
@@ -121,7 +94,7 @@ export async function POST(req: NextRequest) {
     if (type === 'pageview') {
       let session = await db.session.findUnique({ where: { sessionId } })
       if (!session) {
-        const geo = await getGeoFromIP(ip)
+        const geo = getGeoFromHeaders(req)
         session = await db.session.create({
           data: {
             websiteId: website.id,
@@ -207,7 +180,7 @@ export async function POST(req: NextRequest) {
     if (type === 'event') {
       let session = await db.session.findUnique({ where: { sessionId } })
       if (!session) {
-        const geo = await getGeoFromIP(ip)
+        const geo = getGeoFromHeaders(req)
         session = await db.session.create({
           data: {
             websiteId: website.id,

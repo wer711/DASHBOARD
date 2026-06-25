@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
   const from = getFrom(range)
   const events = await db.event.findMany({
-    where: { websiteId: website.id, createdAt: { gte: from } },
+    where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { name: true, category: true, visitorId: true },
   })
 

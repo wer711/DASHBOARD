@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
   const from = getFrom(range)
   const pageViews = await db.pageView.findMany({
-    where: { websiteId: website.id, createdAt: { gte: from } },
+    where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } },
     select: { path: true, title: true, visitorId: true, sessionId: true },
   })
 

@@ -10,11 +10,11 @@ export async function GET(req: Request) {
 
   const from = getFrom(range)
   const [sessions, signups, generations, notes, referrals] = await Promise.all([
-    db.session.count({ where: { websiteId: website.id, startedAt: { gte: from } } }),
-    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, name: 'signup' } }),
-    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, name: 'generate' } }),
-    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, name: 'note' } }),
-    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, name: 'referral' } }),
+    db.session.count({ where: { websiteId: website.id, startedAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } } } }),
+    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } }, name: 'signup' } }),
+    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } }, name: 'generate' } }),
+    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } }, name: 'note' } }),
+    db.event.count({ where: { websiteId: website.id, createdAt: { gte: from }, visitorId: { not: { startsWith: 'demo_' } }, name: 'referral' } }),
   ])
 
   const funnel = [
