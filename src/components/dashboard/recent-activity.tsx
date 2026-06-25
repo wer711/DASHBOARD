@@ -3,10 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Eye, UserPlus, Sparkles, StickyNote, Share2, MousePointerClick, Activity,
+  Eye, UserPlus, Sparkles, StickyNote, Share2, MousePointerClick, Activity, Route,
 } from 'lucide-react'
 import type { RecentItem } from '@/hooks/use-analytics'
 import { formatDateTime, countryFlag, deviceLabel, eventMeta, timeAgo } from '@/lib/format'
+import { VisitorJourney } from '@/components/dashboard/visitor-journey'
 import { cn } from '@/lib/utils'
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -82,12 +83,25 @@ export function RecentActivity({ items }: { items: RecentItem[] }) {
                         )}
                       </div>
                     </div>
-                    <span
-                      className="shrink-0 text-[11px] text-muted-foreground"
-                      title={formatDateTime(item.createdAt)}
-                    >
-                      {timeAgo(item.createdAt)}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span
+                        className="text-[11px] text-muted-foreground"
+                        title={formatDateTime(item.createdAt)}
+                      >
+                        {timeAgo(item.createdAt)}
+                      </span>
+                      {item.visitorId && (
+                        <VisitorJourney
+                          visitorId={item.visitorId}
+                          trigger={
+                            <span className="flex items-center gap-0.5 text-[10px] text-primary opacity-70 transition-opacity hover:opacity-100">
+                              <Route className="h-2.5 w-2.5" />
+                              المسار
+                            </span>
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
                 )
               })}

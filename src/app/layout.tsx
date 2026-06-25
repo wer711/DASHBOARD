@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   description: "لوحة تحكم تحليلية شاملة لمتابعة زوار موقع صدى العقار لحظياً: الزوار، المشاهدات، التسجيلات، التوليدات، الإحالات، الحملات الترويجية.",
   keywords: ["تحليلات", "لوحة تحكم", "صدى العقار", "تتبع الزوار", "تحليلات لحظية"],
   authors: [{ name: "صدى العقار" }],
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  manifest: undefined,
 };
 
 export default function RootLayout({
