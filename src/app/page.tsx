@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Users, Eye, MousePointerClick, UserPlus, Sparkles, StickyNote,
-  Share2, Target, Clock, Activity, TrendingUp,
+  Share2, Target, TrendingUp,
 } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { KpiCard, type KpiData } from '@/components/dashboard/kpi-card'
@@ -19,11 +19,13 @@ import { Campaigns } from '@/components/dashboard/campaigns'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { SetupGuide } from '@/components/dashboard/setup-guide'
 import { LiveTopBar } from '@/components/dashboard/live-top-bar'
+import { WorldMap } from '@/components/dashboard/world-map'
+import { DashboardSkeleton } from '@/components/dashboard/skeletons'
 import { useAnalytics, type Range } from '@/hooks/use-analytics'
 import { useLiveSocket } from '@/hooks/use-live-socket'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 export default function Home() {
   const [range, setRange] = useState<Range>('7d')
@@ -33,18 +35,34 @@ export default function Home() {
 
   const overview = analytics.overview
 
+  // حساب sparklines من بيانات السلاسل الزمنية
+  const sparklines = useMemo(() => {
+    const ts = analytics.timeseries
+    if (!ts || ts.length < 2) return {}
+    return {
+      visitors: ts.map((p) => p.visitors),
+      pageViews: ts.map((p) => p.pageViews),
+      sessions: ts.map((p) => p.sessions),
+      signups: ts.map((p) => p.signups),
+      generations: ts.map((p) => p.generations),
+    }
+  }, [analytics.timeseries])
+
   const kpis: KpiData[] = overview ? [
     {
       key: 'visitors', label: 'الزوار الفريدون', value: overview.visitors,
       change: overview.visitorsChange, icon: <Users className="h-5 w-5" />, accent: 'primary',
+      sparkline: sparklines.visitors,
     },
     {
       key: 'pageViews', label: 'إجمالي المشاهدات', value: overview.pageViews,
       change: overview.pageViewsChange, icon: <Eye className="h-5 w-5" />, accent: 'gold',
+      sparkline: sparklines.pageViews,
     },
     {
       key: 'sessions', label: 'الجلسات', value: overview.sessions,
-      change: overview.sessionsChange, icon: <Activity className="h-5 w-5" />, accent: 'blue',
+      change: overview.sessionsChange, icon: <TrendingUp className="h-5 w-5" />, accent: 'blue',
+      sparkline: sparklines.sessions,
     },
     {
       key: 'bounceRate', label: 'معدل الارتداد', value: overview.bounceRate,
@@ -53,10 +71,12 @@ export default function Home() {
     {
       key: 'signups', label: 'التسجيلات', value: overview.signups,
       change: overview.signupsChange, icon: <UserPlus className="h-5 w-5" />, accent: 'emerald',
+      sparkline: sparklines.signups,
     },
     {
       key: 'generations', label: 'عمليات التوليد', value: overview.generations,
       change: overview.generationsChange, icon: <Sparkles className="h-5 w-5" />, accent: 'gold',
+      sparkline: sparklines.generations,
     },
     {
       key: 'notes', label: 'الملاحظات', value: overview.notes,
@@ -79,16 +99,11 @@ export default function Home() {
         liveConnected={liveConnected}
       />
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6">
-        {/* حالة التحميل */}
-        {analytics.loading && !overview && (
-          <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm">جارٍ تحميل البيانات...</p>
-          </div>
-        )}
+      <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 sm:px-6 sm:py-6">
+        {/* Loading state */}
+        {analytics.loading && !overview && <DashboardSkeleton />}
 
-        {/* خطأ */}
+        {/* Error state */}
         {analytics.error && !overview && (
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="flex items-center gap-3 p-6">
@@ -105,69 +120,78 @@ export default function Home() {
         )}
 
         {overview && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* شريط النشاط اللحظي */}
             <LiveTopBar realtime={analytics.realtime} />
 
             {/* بطاقات KPI */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4 xl:grid-cols-4">
               {kpis.map((kpi) => (
                 <KpiCard key={kpi.key} data={kpi} />
               ))}
             </div>
 
-            {/* معدل التحويل + متوسط المدة — بطاقتان مدمجتان */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Card className="p-4">
-                <p className="text-xs text-muted-foreground">معدل التحويل</p>
-                <p className="mt-1 text-2xl font-bold text-primary">
+            {/* الإحصائيات الإضافية */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+              <Card className="p-3 sm:p-4">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">معدل التحويل</p>
+                <p className="mt-1 text-xl font-bold text-primary sm:text-2xl">
                   {(overview.conversions / Math.max(overview.sessions, 1) * 100).toFixed(1)}%
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {overview.conversions} تحويل من {overview.sessions} جلسة
+                <p className="text-[10px] text-muted-foreground sm:text-[11px]">
+                  {overview.conversions} تحويل
                 </p>
               </Card>
-              <Card className="p-4">
-                <p className="text-xs text-muted-foreground">متوسط مدة الجلسة</p>
-                <p className="mt-1 text-2xl font-bold text-foreground">
+              <Card className="p-3 sm:p-4">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">متوسط مدة الجلسة</p>
+                <p className="mt-1 text-xl font-bold text-foreground sm:text-2xl" dir="ltr">
                   {formatDurationShort(overview.avgSessionDuration)}
                 </p>
-                <p className="text-[11px] text-muted-foreground">دقائق:ثواني</p>
+                <p className="text-[10px] text-muted-foreground sm:text-[11px]">دقائق:ثواني</p>
               </Card>
-              <Card className="p-4">
-                <p className="text-xs text-muted-foreground">زائر نشط الآن</p>
-                <p className="mt-1 text-2xl font-bold text-emerald-600">
+              <Card className="p-3 sm:p-4">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">زائر نشط الآن</p>
+                <p className="mt-1 text-xl font-bold text-emerald-600 sm:text-2xl">
                   {liveCount}
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {liveConnected ? 'متصل لحظياً' : 'جارٍ الاتصال...'}
+                <p className="text-[10px] text-muted-foreground sm:text-[11px]">
+                  {liveConnected ? 'متصل لحظياً' : 'تحديث كل 4ث'}
                 </p>
               </Card>
-              <Card className="p-4">
-                <p className="text-xs text-muted-foreground">آخر تحديث</p>
-                <p className="mt-1 text-2xl font-bold text-foreground" dir="ltr">
+              <Card className="p-3 sm:p-4">
+                <p className="text-[10px] text-muted-foreground sm:text-xs">آخر تحديث</p>
+                <p className="mt-1 text-xl font-bold text-foreground sm:text-2xl" dir="ltr">
                   {analytics.lastUpdated
                     ? analytics.lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
                     : '—'}
                 </p>
-                <p className="text-[11px] text-muted-foreground">يُحدّث تلقائياً كل 30 ثانية</p>
+                <p className="text-[10px] text-muted-foreground sm:text-[11px]">يُحدّث تلقائياً</p>
               </Card>
             </div>
 
             {/* المخطط الزمني + البث المباشر */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
               <TimeSeriesChart data={analytics.timeseries} granularity="day" />
               <LiveFeed polledEvents={analytics.realtime?.recentEvents || []} />
             </div>
 
-            {/* الزوار النشطون + مسار التحويل */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <ActiveVisitors sessions={analytics.realtime?.activeSessions || []} />
+            {/* خريطة العالم + مسار التحويل */}
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+              <WorldMap
+                countries={analytics.geo.countries}
+                activeVisitors={liveCount}
+              />
               <FunnelChart funnel={analytics.funnel.funnel} conversionRate={analytics.funnel.conversionRate} />
             </div>
 
+            {/* الزوار النشطون + الأحداث المخصصة */}
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+              <ActiveVisitors sessions={analytics.realtime?.activeSessions || []} />
+              <EventsBreakdown events={analytics.events} />
+            </div>
+
             {/* الصفحات + المصادر + الأجهزة */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
               <TopPages pages={analytics.pages} />
               <TopSources sources={analytics.sources} />
               <DevicesBreakdown
@@ -178,10 +202,9 @@ export default function Home() {
               />
             </div>
 
-            {/* الجغرافيا + الأحداث المخصصة + الحملات */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {/* الجغرافيا + الحملات */}
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
               <GeoList countries={analytics.geo.countries} cities={analytics.geo.cities} />
-              <EventsBreakdown events={analytics.events} />
               <Campaigns
                 campaigns={analytics.campaigns.campaigns}
                 sources={analytics.campaigns.sources}
@@ -204,7 +227,7 @@ export default function Home() {
                 تتبّع لحظي كامل لكل زيارة وتسجيل وتوليد وإحالة
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                البيانات تُخزَّن محلياً في قاعدة بياناتك الخاصة — لا تُشارَك مع أي طرف خارجي
+                البيانات تُخزَّن في قاعدة بياناتك الخاصة على Vercel Postgres — لا تُشارَك مع أي طرف خارجي
               </p>
             </footer>
           </div>
