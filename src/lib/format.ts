@@ -25,6 +25,13 @@ export function formatDuration(seconds: number): string {
   return `${m}د ${s}ث`
 }
 
+export function formatDurationShort(seconds: number): string {
+  if (!seconds || seconds < 1) return '0:00'
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const sec = Math.floor(diff / 1000)
