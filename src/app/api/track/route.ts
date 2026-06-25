@@ -130,14 +130,51 @@ export async function POST(req: NextRequest) {
           },
         })
       } else {
+        // الجلسة موجودة — حدّثها بذكاء:
+        // - حدّث lastActiveAt + pageViews دائماً
+        // - املأ بيانات geo/device الناقصة (للجلسات القديمة قبل إصلاح Vercel headers)
+        const updateData: Record<string, unknown> = {
+          lastActiveAt: new Date(),
+          isActive: true,
+          pageViews: { increment: 1 },
+          isBounce: false,
+        }
+        const geo = getGeoFromHeaders(req)
+        if (!session.country && geo.country) updateData.country = geo.country
+        if (!session.countryCode && geo.countryCode) updateData.countryCode = geo.countryCode
+        if (!session.city && geo.city) updateData.city = geo.city
+        if (!session.region && geo.region) updateData.region = geo.region
+        if (!session.latitude && geo.latitude) updateData.latitude = geo.latitude
+        if (!session.longitude && geo.longitude) updateData.longitude = geo.longitude
+        if (!session.browser || session.browser === 'Unknown') {
+          if (device.browser && device.browser !== 'Unknown') {
+            updateData.browser = device.browser
+            updateData.browserVersion = device.browserVersion
+          }
+        }
+        if (!session.os || session.os === 'Unknown') {
+          if (device.os && device.os !== 'Unknown') {
+            updateData.os = device.os
+            updateData.osVersion = device.osVersion
+          }
+        }
+        if (!session.brand && device.brand) updateData.brand = device.brand
+        if (!session.model && device.model) updateData.model = device.model
+        // أضف UTM/referrer إذا كانت ناقصة
+        if (!session.referrer && referrer) {
+          updateData.referrer = referrer
+          updateData.referrerDomain = referrerDomain
+        }
+        if (!session.utmSource && utm.utmSource) {
+          updateData.utmSource = utm.utmSource
+          updateData.utmMedium = utm.utmMedium
+          updateData.utmCampaign = utm.utmCampaign
+          updateData.utmTerm = utm.utmTerm
+          updateData.utmContent = utm.utmContent
+        }
         session = await db.session.update({
           where: { sessionId },
-          data: {
-            lastActiveAt: new Date(),
-            isActive: true,
-            pageViews: { increment: 1 },
-            isBounce: false,
-          },
+          data: updateData as any,
         })
       }
 
