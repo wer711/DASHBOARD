@@ -18,6 +18,7 @@ import { FunnelChart } from '@/components/dashboard/funnel-chart'
 import { Campaigns } from '@/components/dashboard/campaigns'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { SetupGuide } from '@/components/dashboard/setup-guide'
+import { LiveTopBar } from '@/components/dashboard/live-top-bar'
 import { useAnalytics, type Range } from '@/hooks/use-analytics'
 import { useLiveSocket } from '@/hooks/use-live-socket'
 import { Card, CardContent } from '@/components/ui/card'
@@ -105,6 +106,9 @@ export default function Home() {
 
         {overview && (
           <div className="space-y-6">
+            {/* شريط النشاط اللحظي */}
+            <LiveTopBar realtime={analytics.realtime} />
+
             {/* بطاقات KPI */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
               {kpis.map((kpi) => (

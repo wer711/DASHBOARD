@@ -177,14 +177,15 @@ export function useAnalytics(range: Range): AnalyticsData {
     }
 
     loadAll()
-    intervalRef.current = setInterval(loadAll, 30000)
+    // تحديث كل 15 ثانية (بدلاً من 30) — توازن بين اللحظية وأداء الخادم
+    intervalRef.current = setInterval(loadAll, 15000)
     return () => {
       cancelled = true
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [range, refreshKey])
 
-  // جلب البيانات اللحظية + التحديث كل 10 ثوانٍ
+  // جلب البيانات اللحظية + التحديث كل 4 ثوانٍ (شبه لحظي)
   useEffect(() => {
     let cancelled = false
     const loadRealtime = async () => {
@@ -197,7 +198,8 @@ export function useAnalytics(range: Range): AnalyticsData {
       }
     }
     loadRealtime()
-    const iv = setInterval(loadRealtime, 10000)
+    // تحديث كل 4 ثوانٍ للزوار النشطين + الأحداث اللحظية
+    const iv = setInterval(loadRealtime, 4000)
     return () => {
       cancelled = true
       clearInterval(iv)
